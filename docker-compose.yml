@@ -1,44 +1,50 @@
-version: '3.8'
+# Docker Compose configuration for Jenkins with Docker-in-Docker (DinD) setup
+# This setup allows Jenkins to build and run Docker containers within itself
 
+# Network configuration 
 networks:
-  jenkins:
+  jenkins:  # Custom network for internal Jenkins and Docker-in-Docker service communication
 
+# Volume definitions - Persistent storage for Jenkins data and Docker certificates
 volumes:
-  jenkins-data:
-  docker-certs-ca:
-  docker-certs-client:
+  jenkins-data:        # Stores Jenkins configuration, jobs, and workspace data
+  docker-certs-ca:     # Docker CA certificates for secure communication
+  docker-certs-client: # Docker client certificates for authentication
 
+# Service definitions
 services:
+  # Docker-in-Docker (DinD) service - Provides Docker daemon running inside a container for Jenkins to use
   dind:
-    image: docker:dind
-    container_name: dind
-    privileged: true
+    image: docker:dind                    # Official Docker-in-Docker image
+    container_name: dind                  # Fixed container name for easy reference
+    privileged: true                      # Required for DinD to access host Docker daemon
     networks:
-      jenkins:
+      jenkins:                           # Connect to custom Jenkins network
         aliases:
-          - docker
+          - docker                       # Alias 'docker' for easy access from Jenkins
     environment:
-      - DOCKER_TLS_CERTDIR=/certs
+      - DOCKER_TLS_CERTDIR=/certs        # DOCKER_TLS_CERTDIR: Directory where Docker TLS certificates are stored
     volumes:
-      - docker-certs-ca:/certs/ca
-      - docker-certs-client:/certs/client
-      - jenkins-data:/var/jenkins_home
+      - docker-certs-ca:/certs/ca           # Mount Docker CA certificates for secure communication
+      - docker-certs-client:/certs/client   # Mount Docker client certificates for authentication
+      - jenkins-data:/var/jenkins_home      # Share Jenkins data volume with Jenkins service
 
+  # Jenkins service - CI/CD server with Docker integration
   jenkins:
-    image: jenkins/jenkins:lts-jdk11
-    container_name: jenkins
-    user: root
-    restart: unless-stopped
+    image: jenkins/jenkins:lts-jdk11     # Official Jenkins LTS image with Java 11
+    container_name: jenkins               # Fixed container name for easy reference
+    user: root                           # Run as root to access Docker socket
+    restart: unless-stopped              # Auto-restart unless manually stopped
     networks:
-      - jenkins
+      - jenkins                          # Connect to custom Jenkins network
     environment:
-      - DOCKER_HOST=tcp://docker:2376
-      - DOCKER_CERT_PATH=/certs/client
-      - DOCKER_TLS_VERIFY=1
+      - DOCKER_HOST=tcp://docker:2376   # DOCKER_HOST: Points to the DinD service for Docker operation
+      - DOCKER_CERT_PATH=/certs/client   # DOCKER_CERT_PATH: Path to Docker client certificates
+      - DOCKER_TLS_VERIFY=1             # DOCKER_TLS_VERIFY: Enable TLS verification for Docker communication
     ports:
-      - "8080:8080"
-      - "50000:50000"
+      - "8080:8080"                     # Web port - access Jenkins at http://localhost:8080
+      - "50000:50000"                   # Agent communication port - for Jenkins agents to connect
     volumes:
-      - jenkins-data:/var/jenkins_home
-      - docker-certs-client:/certs/client:ro
-      - /usr/bin/docker:/usr/bin/docker
+      - jenkins-data:/var/jenkins_home          # Jenkins home directory - stores all Jenkins data
+      - docker-certs-client:/certs/client:ro    # Mount Docker client certificates as read-only
+      - /usr/bin/docker:/usr/bin/docker         # Mount host Docker binary to enable Docker commands in Jenkins
