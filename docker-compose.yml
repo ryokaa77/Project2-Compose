@@ -1,15 +1,19 @@
 # Docker Compose configuration for Jenkins with Docker-in-Docker (DinD) setup
 # This setup allows Jenkins to build and run Docker containers within itself
 
+version: '3.7'
+
 # Network configuration 
 networks:
-  jenkins:  # Custom network for internal Jenkins and Docker-in-Docker service communication
+  jenkins_dind_ryokaa77:  # Custom network for internal Jenkins and Docker-in-Docker service communication
+    driver: bridge
 
 # Volume definitions - Persistent storage for Jenkins data and Docker certificates
 volumes:
   jenkins-data:        # Stores Jenkins configuration, jobs, and workspace data
   docker-certs-ca:     # Docker CA certificates for secure communication
   docker-certs-client: # Docker client certificates for authentication
+  docker-layer-cache:  # Docker layer cache for improved build performance
 
 # Service definitions
 services:
@@ -17,9 +21,12 @@ services:
   dind:
     image: docker:dind                    # Official Docker-in-Docker image
     container_name: dind                  # Fixed container name for easy reference
+    user: root                            # Run as root to access Docker socket
     privileged: true                      # Required for DinD to access host Docker daemon
+    expose:
+      - 2376                              # Expose Docker daemon port for Jenkins to connect
     networks:
-      jenkins:                           # Connect to custom Jenkins network
+      jenkins_dind_ryokaa77:                           # Connect to custom Jenkins network
         aliases:
           - docker                       # Alias 'docker' for easy access from Jenkins
     environment:
@@ -28,23 +35,26 @@ services:
       - docker-certs-ca:/certs/ca           # Mount Docker CA certificates for secure communication
       - docker-certs-client:/certs/client   # Mount Docker client certificates for authentication
       - jenkins-data:/var/jenkins_home      # Share Jenkins data volume with Jenkins service
+      - docker-layer-cache:/var/lib/docker  # Mount Docker layer cache for improved build performance
 
   # Jenkins service - CI/CD server with Docker integration
   jenkins:
-    image: jenkins/jenkins:lts-jdk11     # Official Jenkins LTS image with Java 11
+    image: jenkins/jenkins:lts-jdk11      # Official Jenkins LTS image with Java 11
     container_name: jenkins               # Fixed container name for easy reference
-    user: root                           # Run as root to access Docker socket
-    restart: unless-stopped              # Auto-restart unless manually stopped
+    user: root                            # Run as root to access Docker socket
+    depends_on:
+      - dind
     networks:
-      - jenkins                          # Connect to custom Jenkins network
+      - jenkins_dind_ryokaa77             # Connect to custom Jenkins network
     environment:
-      - DOCKER_HOST=tcp://docker:2376   # DOCKER_HOST: Points to the DinD service for Docker operation
-      - DOCKER_CERT_PATH=/certs/client   # DOCKER_CERT_PATH: Path to Docker client certificates
-      - DOCKER_TLS_VERIFY=1             # DOCKER_TLS_VERIFY: Enable TLS verification for Docker communication
+      - DOCKER_HOST=tcp://dind:2376       # DOCKER_HOST: Points to the DinD service for Docker operation
+      - DOCKER_CERT_PATH=/certs/client    # DOCKER_CERT_PATH: Path to Docker client certificates
+      - DOCKER_TLS_VERIFY=1               # DOCKER_TLS_VERIFY: Enable TLS verification for Docker communication
     ports:
-      - "8080:8080"                     # Web port - access Jenkins at http://localhost:8080
-      - "50000:50000"                   # Agent communication port - for Jenkins agents to connect
+      - "8080:8080"                       # Web port - access Jenkins at http://localhost:8080
+      - "50000:50000"                     # Agent communication port - for Jenkins agents to connect
     volumes:
       - jenkins-data:/var/jenkins_home          # Jenkins home directory - stores all Jenkins data
       - docker-certs-client:/certs/client:ro    # Mount Docker client certificates as read-only
+      - docker-layer-cache:/var/lib/docker      # Mount Docker layer cache for improved build performance
       - /usr/bin/docker:/usr/bin/docker         # Mount host Docker binary to enable Docker commands in Jenkins
