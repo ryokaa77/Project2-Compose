@@ -1,7 +1,7 @@
 # Docker Compose configuration for Jenkins with Docker-in-Docker (DinD) setup
 # This setup allows Jenkins to build and run Docker containers within itself
 
-version: '3.7'
+version: '3.9'
 
 # Network configuration 
 networks:
@@ -10,6 +10,7 @@ networks:
 
 # Volume definitions - Persistent storage for Jenkins data and Docker certificates
 volumes:
+  jenkins-home:
   jenkins-data:        # Stores Jenkins configuration, jobs, and workspace data
   docker-certs-ca:     # Docker CA certificates for secure communication
   docker-certs-client: # Docker client certificates for authentication
@@ -19,8 +20,8 @@ volumes:
 services:
   # Docker-in-Docker (DinD) service - Provides Docker daemon running inside a container for Jenkins to use
   dind:
-    image: docker:dind                    # Official Docker-in-Docker image
-    container_name: 24.0-dind                  # Fixed container name for easy reference
+    image: docker:24-dind                    # Official Docker-in-Docker image
+    container_name: dind                  # Fixed container name for easy reference
     privileged: true                      # Required for DinD to access host Docker daemon
     expose:
       - 2376                              # Expose Docker daemon port for Jenkins to connect
