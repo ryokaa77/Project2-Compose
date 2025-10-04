@@ -21,7 +21,6 @@ services:
   dind:
     image: docker:dind                    # Official Docker-in-Docker image
     container_name: dind                  # Fixed container name for easy reference
-    user: root                            # Run as root to access Docker socket
     privileged: true                      # Required for DinD to access host Docker daemon
     expose:
       - 2376                              # Expose Docker daemon port for Jenkins to connect
@@ -46,6 +45,7 @@ services:
       - dind
     networks:
       - jenkins_dind_ryokaa77             # Connect to custom Jenkins network
+    restart: unless-stopped
     environment:
       - DOCKER_HOST=tcp://dind:2376       # DOCKER_HOST: Points to the DinD service for Docker operation
       - DOCKER_CERT_PATH=/certs/client    # DOCKER_CERT_PATH: Path to Docker client certificates
