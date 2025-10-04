@@ -20,10 +20,11 @@ services:
   # Docker-in-Docker (DinD) service - Provides Docker daemon running inside a container for Jenkins to use
   dind:
     image: docker:dind                    # Official Docker-in-Docker image
-    container_name: dind                  # Fixed container name for easy reference
+    container_name: 24.0-dind                  # Fixed container name for easy reference
     privileged: true                      # Required for DinD to access host Docker daemon
     expose:
       - 2376                              # Expose Docker daemon port for Jenkins to connect
+    restart: unless-stopped
     networks:
       jenkins_dind_ryokaa77:                           # Connect to custom Jenkins network
         aliases:
@@ -57,4 +58,4 @@ services:
       - jenkins-data:/var/jenkins_home          # Jenkins home directory - stores all Jenkins data
       - docker-certs-client:/certs/client:ro    # Mount Docker client certificates as read-only
       - docker-layer-cache:/var/lib/docker      # Mount Docker layer cache for improved build performance
-      - /usr/bin/docker:/usr/bin/docker         # Mount host Docker binary to enable Docker commands in Jenkins
+
