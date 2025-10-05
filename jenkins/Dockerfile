@@ -16,3 +16,5 @@ RUN node -v && npm -v && docker --version && snyk --version && jq --version
 
 
 USER jenkins
+
+ENV PATH="/usr/local/bin:${PATH}"
