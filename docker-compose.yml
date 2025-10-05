@@ -5,12 +5,11 @@ version: '3.9'
 
 # Network configuration 
 networks:
-  jenkins_dind_ryokaa77:  # Custom network for internal Jenkins and Docker-in-Docker service communication
+  jenkins_dind:  # Custom network for internal Jenkins and Docker-in-Docker service communication
     driver: bridge
 
 # Volume definitions - Persistent storage for Jenkins data and Docker certificates
 volumes:
-  jenkins-home:
   jenkins-data:        # Stores Jenkins configuration, jobs, and workspace data
   docker-certs-ca:     # Docker CA certificates for secure communication
   docker-certs-client: # Docker client certificates for authentication
@@ -27,7 +26,7 @@ services:
       - 2376                              # Expose Docker daemon port for Jenkins to connect
     restart: unless-stopped
     networks:
-      jenkins_dind_ryokaa77:                           # Connect to custom Jenkins network
+      jenkins_dind:                           # Connect to custom Jenkins network
         aliases:
           - docker                       # Alias 'docker' for easy access from Jenkins
     environment:
@@ -46,7 +45,7 @@ services:
     depends_on:
       - dind
     networks:
-      - jenkins_dind_ryokaa77             # Connect to custom Jenkins network
+      - jenkins_dind            # Connect to custom Jenkins network
     restart: unless-stopped
     environment:
       - DOCKER_HOST=tcp://docker:2376       # DOCKER_HOST: Points to the DinD service for Docker operation
