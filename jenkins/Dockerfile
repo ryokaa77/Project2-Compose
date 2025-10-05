@@ -8,11 +8,10 @@ RUN apt-get update -qq && \
     curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && \
     apt-get install -y -qq nodejs && \
     curl -fsSL https://get.docker.com | sh -s -- --client-only && \
-    npm install -g snyk && \
     rm -rf /var/lib/apt/lists/*
 
 # Verify installation
-RUN node -v && npm -v && docker --version && snyk --version && jq --version
+RUN node -v && npm -v && docker --version && jq --version
 
 
 USER jenkins
