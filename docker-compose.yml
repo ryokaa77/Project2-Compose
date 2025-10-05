@@ -39,7 +39,9 @@ services:
 
   # Jenkins service - CI/CD server with Docker integration
   jenkins:
-    image: jenkins/jenkins:lts-jdk17      # Official Jenkins LTS image with Java 17
+    build:                               # custom image with CLI tool
+      context: ./jenkins
+      dockerfile: Dockerfile    
     container_name: jenkins               # Fixed container name for easy reference
     user: root                            # Run as root to access Docker socket
     depends_on:
